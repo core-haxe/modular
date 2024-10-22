@@ -53,7 +53,7 @@ class ModuleDescriptorBuilder {
             fields.push({
                 name: "classes",
                 access: [APublic],
-                kind: FVar(macro: Array<ModuleClassDescriptor>, macro []),
+                kind: FVar(macro: Array<modular.ModuleClassDescriptor>, macro []),
                 pos: Context.currentPos()
             });
         }
