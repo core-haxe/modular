@@ -9,7 +9,7 @@ extern class ModuleManager {
 
     public function addStartUpModule(name:String, callback:Module->Void = null):Void;
     public function find(name:String):Module;
-    public function get(name:String):Promise<Module>;
+    public function get(name:String, type:String = null):Promise<Module>;
     public function createClassInstance<T>(name:String, type:Class<T> = null):Promise<T>;
     public function createLoadedClassInstance<T>(name:String, type:Class<T> = null):T;
 }
@@ -85,9 +85,9 @@ class ModuleManager {
 
     private var _loadedModules:Map<String, Module> = [];
     private var _loadingModules:Map<String, Array<{resolve:Module->Void, reject:Dynamic->Void}>> = [];
-    public function get(name:String):Promise<Module> {
+    public function get(name:String, type:String = null):Promise<Module> {
         return new Promise((resolve, reject) -> {
-            log.info('attempting to load module "${name}"');
+            log.info('attempting to load module "${name} (${type})"');
             if (_loadedModules.exists(name)) {
                 log.info('module "${name}" in found in cache, reusing');
                 resolve(_loadedModules.get(name));
@@ -130,16 +130,17 @@ class ModuleManager {
                 
                 var loader = new ModuleLoader();
                 loader.load(path).then(loader -> {
-                    var namespace = name.split("/").pop();
                     var module = new Module();
                     @:privateAccess module._loader = loader;
-                    @:privateAccess module.init(namespace);
-                    _loadedModules.set(name, module);
+                    if (type == null || type == "") {
+                        var namespace = name.split("/").pop();
+                        @:privateAccess module.init(namespace);
+                    }
 
                     var dependencyPromises = [];
                     if (module.descriptor != null && module.descriptor.dependencies != null) {
                         for (dependency in module.descriptor.dependencies) {
-                            dependencyPromises.push(get.bind(dependency));
+                            dependencyPromises.push(get.bind(dependency.path, dependency.type));
                         }
                     }
 
@@ -148,7 +149,7 @@ class ModuleManager {
                         if (callback != null) {
                             callback(module);
                         }
-    
+
                         //resolve(module);
                         var list = _loadingModules.get(path);
                         if (list != null) {
@@ -156,6 +157,7 @@ class ModuleManager {
                                 list.shift().resolve(module);
                             }
                         }
+                        _loadedModules.set(name, module);
                     }, error -> {
                         reject(error);
                     });

@@ -1,9 +1,9 @@
 package modular.impl.nodejs;
 
-import js.Node;
-import promises.Promise;
 import haxe.io.Path;
+import js.Node;
 import logging.Logger;
+import promises.Promise;
 
 class ModuleLoader extends ModuleLoaderBase {
     private var log = new Logger(ModuleLoader);

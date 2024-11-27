@@ -25,11 +25,11 @@ class Module {
 
     private function init(namespace:String) {
         var moduleDescriptorClass = "ModuleDescriptor";
-        if (namespace != null && namespace.trim().length > 0) {
-            moduleDescriptorClass = namespace + "." + moduleDescriptorClass;
-        }
-
         var moduleDescriptor = createClassInstance(moduleDescriptorClass, IModuleDescriptor);
+        if (moduleDescriptor == null && namespace != null && namespace.trim().length > 0) {
+            moduleDescriptorClass = namespace + "." + moduleDescriptorClass;
+            moduleDescriptor = createClassInstance(moduleDescriptorClass, IModuleDescriptor);
+        }
         if (moduleDescriptor != null) {
             this.descriptor = moduleDescriptor;
 
@@ -44,20 +44,28 @@ class Module {
             }
 
             #if nodejs
-            // when loading a module, the __interfaces__ haxe construct doesnt come through correctly,
-            // this means things like "(someClass is ISomeInterface)" always returns false since internally
-            // that checks this __interfaces__ member var, we'll recreate that.
             if (moduleDescriptor.classes != null) {
+                // when using Type.resolveClass (as things like haxe.Unserializer do), haxe uses the magic "$hxClasses"
+                // in order to obtain information about that class (and crucially the constructor). Since this module
+                // is loaded into its own context, it has its own $hxClasses (which we cant access), but we can iterate
+                // through the module looking for classes we know are there from the descriptor and add them to the
+                // $hxClasses in this context
                 for (moduleClass in moduleDescriptor.classes) {
-                    if (moduleClass.interfaces != null) {
-                        for (moduleClassInterface in moduleClass.interfaces) {
-                            var nameParts = moduleClass.name.split(".");
-                            var ref = @:privateAccess _loader.module;
-                            while (ref != null && nameParts.length != 0) {
-                                var namePart = nameParts.shift();
-                                ref = js.Syntax.code("{0}[{1}]", ref, namePart);
-                            }
+                    var nameParts = moduleClass.name.split(".");
+                    var ref = @:privateAccess _loader.module;
+                    while (ref != null && nameParts.length != 0) {
+                        var namePart = nameParts.shift();
+                        ref = js.Syntax.code("{0}[{1}]", ref, namePart);
+                    }
+                    if (ref != null) {
+                        js.Syntax.code("if (!$hxClasses[{0}]) $hxClasses[{0}] = {1}", moduleClass.name, ref);
+                    }
 
+                    if (moduleClass.interfaces != null) {
+                        // when loading a module, the __interfaces__ haxe construct doesnt come through correctly,
+                        // this means things like "(someClass is ISomeInterface)" always returns false since internally
+                        // that checks this __interfaces__ member var, we'll recreate that.
+                        for (moduleClassInterface in moduleClass.interfaces) {
                             if (ref != null) {
                                 var __interfaces__:Array<Dynamic> = Reflect.field(ref, "__interfaces__");
                                 if (__interfaces__ == null) {
@@ -100,6 +108,32 @@ class Module {
                     if (ref != null) {
                         js.Syntax.code("if (!$hxClasses[{0}]) $hxClasses[{0}] = {1}", moduleClass.name, ref);
                     }
+
+                    if (moduleClass.interfaces != null) {
+                        // when loading a module, the __interfaces__ haxe construct doesnt come through correctly,
+                        // this means things like "(someClass is ISomeInterface)" always returns false since internally
+                        // that checks this __interfaces__ member var, we'll recreate that.
+                        for (moduleClassInterface in moduleClass.interfaces) {
+                            if (ref != null) {
+                                var __interfaces__:Array<Dynamic> = Reflect.field(ref, "__interfaces__");
+                                if (__interfaces__ == null) {
+                                    __interfaces__ == [];
+                                    Reflect.setField(ref, "__interfaces__", __interfaces__);
+                                }
+
+                                var interfaceNameParts = moduleClassInterface.split(".");
+                                var interfaceRef = js.Syntax.code("window");
+                                while (interfaceRef != null && interfaceNameParts.length != 0) {
+                                    var interfaceNamePart = interfaceNameParts.shift();
+                                    interfaceRef = js.Syntax.code("{0}[{1}]", interfaceRef, interfaceNamePart);
+                                }
+                                if (interfaceRef != null) {
+                                    __interfaces__.push(interfaceRef);
+                                }
+                            }
+                        }
+                    }
+
                 }
             }
             #end

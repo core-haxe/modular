@@ -1,8 +1,8 @@
 package modular.macros;
 
-import haxe.macro.Expr.Field;
 #if macro
 
+import haxe.macro.Expr.Field;
 import haxe.macro.Context;
 
 class ModuleDescriptorBuilder {
@@ -61,7 +61,7 @@ class ModuleDescriptorBuilder {
             fields.push({
                 name: "dependencies",
                 access: [APublic],
-                kind: FVar(macro: Array<String>, macro []),
+                kind: FVar(macro: Array<modular.ModuleDependency>, macro []),
                 pos: Context.currentPos()
             });
         }
