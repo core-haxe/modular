@@ -5,6 +5,9 @@ package modular;
 import promises.Promise;
 
 extern class ModuleManager {
+    public var basePath:String;
+    public var subDirectory:String;
+
     public static var instance(get, null):ModuleManager;
 
     public function addStartUpModule(name:String, callback:Module->Void = null):Void;
