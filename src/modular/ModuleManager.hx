@@ -43,7 +43,8 @@ class ModuleManager {
     }
 
     public var basePath:String = null;
-    public var subDirectory = "modules";
+    public var subDirectory:String = "modules";
+    public var moduleSuffix:String = null;
 
     private var _startUpModules:Array<StartUpModuleEntry> = [];
     public function addStartUpModule(name:String, callback:Module->Void = null) {
@@ -132,6 +133,7 @@ class ModuleManager {
 
                 
                 var loader = new ModuleLoader();
+                loader.suffix = this.moduleSuffix;
                 loader.load(path).then(loader -> {
                     var module = new Module();
                     @:privateAccess module._loader = loader;

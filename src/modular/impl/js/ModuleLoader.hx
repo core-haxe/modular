@@ -6,14 +6,20 @@ import js.Syntax;
 import logging.Logger;
 import promises.Promise;
 
+using StringTools;
+
 class ModuleLoader extends ModuleLoaderBase {
     private var log = new Logger(ModuleLoader);
+    public var suffix:String = null;
 
     public override function load(name:String):Promise<modular.ModuleLoader> {
         return new Promise((resolve, reject) -> {
             var filename = Path.normalize(name);
             if (!StringTools.endsWith(filename, ".js")) {
                 filename += ".js";
+            }
+            if (suffix != null && suffix.trim().length > 0) {
+                filename += "?" + suffix;
             }
 
             log.info('loading js module "${filename}"');
