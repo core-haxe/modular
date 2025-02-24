@@ -5,6 +5,8 @@ package modular;
 import promises.Promise;
 
 class ModuleLoaderBase {
+    public var suffix:String = null;
+
     public function new() {
     }
 

@@ -10,7 +10,6 @@ using StringTools;
 
 class ModuleLoader extends ModuleLoaderBase {
     private var log = new Logger(ModuleLoader);
-    public var suffix:String = null;
 
     public override function load(name:String):Promise<modular.ModuleLoader> {
         return new Promise((resolve, reject) -> {
